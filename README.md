@@ -48,3 +48,5 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+If You want to use android emulator on linux without android studio, you can use [method](https://abp.io/docs/latest/framework/ui/react-native/setting-up-android-emulator).
