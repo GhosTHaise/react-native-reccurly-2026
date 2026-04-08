@@ -4,8 +4,8 @@ import { Text, View } from 'react-native'
 const SignUp = () => {
     return (
         <View>
-            <Text>SignIn</Text>
-            <Link href="/(auth)/sign-up">create Account</Link>
+            <Text>Sign Up</Text>
+            <Link href="/(auth)/sign-up">Log in</Link>
         </View>
     )
 }
