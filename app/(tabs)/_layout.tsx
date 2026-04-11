@@ -2,10 +2,9 @@ import { tabs } from '@/constants/data'
 import { colors, components } from '@/constants/theme'
 import clsx from 'clsx'
 import { Tabs } from 'expo-router'
-import { styled } from "nativewind"
 import React from 'react'
 import { Image, View } from 'react-native'
-import { SafeAreaView as RNSafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const tabBar = components.tabBar
 
@@ -23,7 +22,6 @@ const TabsLayout = () => {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView>
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -62,7 +60,6 @@ const TabsLayout = () => {
           ))
         }
       </Tabs>
-    </SafeAreaView>
   )
 }
 
