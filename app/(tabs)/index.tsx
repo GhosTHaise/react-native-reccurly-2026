@@ -1,3 +1,5 @@
+import ListHeading from '@/components/list-heading';
+import UpcomingSubscriptionCard from '@/components/upcoming-subscription-card';
 import { HOME_BALANCE, HOME_USER } from '@/constants/data';
 import { icons } from '@/constants/icons';
 import images from '@/constants/images';
@@ -28,6 +30,18 @@ export default function App() {
           </Text>
           <Text className="home-balance-date">{dayjs(HOME_BALANCE.nextRenewalDate).format('MM/YY')}</Text>
         </View>
+      </View>
+
+      <View>
+        <ListHeading
+          title="Upcoming"
+        />
+        <UpcomingSubscriptionCard />
+      </View>
+      <View>
+        <ListHeading
+          title="All Subscriptions"
+        />
       </View>
     </SafeAreaView>
   );
