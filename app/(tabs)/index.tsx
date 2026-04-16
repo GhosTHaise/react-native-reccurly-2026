@@ -1,6 +1,6 @@
 import ListHeading from '@/components/list-heading';
 import UpcomingSubscriptionCard from '@/components/upcoming-subscription-card';
-import { HOME_BALANCE, HOME_USER } from '@/constants/data';
+import { HOME_BALANCE, HOME_USER, UPCOMING_SUBSCRIPTIONS } from '@/constants/data';
 import { icons } from '@/constants/icons';
 import images from '@/constants/images';
 import { formatCurrency } from '@/lib/utils';
@@ -36,7 +36,7 @@ export default function App() {
         <ListHeading
           title="Upcoming"
         />
-        <UpcomingSubscriptionCard />
+        <UpcomingSubscriptionCard data={UPCOMING_SUBSCRIPTIONS[0]} />
       </View>
       <View>
         <ListHeading
