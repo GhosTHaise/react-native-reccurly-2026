@@ -42,6 +42,32 @@ To learn more about developing your project with Expo, look at the following res
 - [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
 - [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
 
+## Environment Variables
+
+This project supports environment variables for configuration. Create a `.env` file in the root directory to add your environment variables:
+
+```bash
+# Clerk Authentication
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
+```
+
+### How to Use Environment Variables
+
+Access environment variables in your code using `process.env`:
+
+```tsx
+import { Constants } from 'expo-constants';
+
+const clerkPublishableKey = Constants.expoConfig.extra.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+```
+
+### Important Notes
+
+- Environment variables prefixed with `EXPO_PUBLIC_` are available in both development and production builds
+- Variables without `EXPO_PUBLIC_` prefix are only available in development builds
+- Never commit sensitive information to version control - add `.env` to your `.gitignore` file
+- Use `Constants.expoConfig.extra` to access environment variables in your app
+
 ## Join the community
 
 Join our community of developers creating universal apps.
