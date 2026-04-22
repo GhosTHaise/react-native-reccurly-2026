@@ -23,13 +23,13 @@ const TabsLayout = () => {
   const insets = useSafeAreaInsets();
   const { isLoaded, isSignedIn } = useAuth();
 
-  /* if (!isLoaded) {
+  if (!isLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
-  } */
+  }
 
   if (!isSignedIn) {
     return <Redirect href="/(auth)/sign-in" />;
