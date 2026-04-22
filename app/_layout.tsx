@@ -1,10 +1,10 @@
 import "@/global.css";
+import { ClerkProvider } from "@clerk/expo";
+import { tokenCache } from "@clerk/expo/token-cache";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
-import { ClerkProvider, ClerkLoaded } from "@clerk/expo";
-import { tokenCache } from "@clerk/expo/token-cache";
-import { View, ActivityIndicator } from "react-native";
+//import { View, ActivityIndicator } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,22 +36,20 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ClerkLoaded>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="(auth)" />
         </Stack>
-      </ClerkLoaded>
       {/* Loading state while Clerk initializes */}
-      <ClerkLoadingView />
+      {/* <ClerkLoadingView /> */}
     </ClerkProvider>
   )
 }
 
-function ClerkLoadingView() {
+/* function ClerkLoadingView() {
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" />
         </View>
     );
-}
+} */
