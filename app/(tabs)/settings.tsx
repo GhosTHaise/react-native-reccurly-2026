@@ -1,44 +1,79 @@
-import { useAuth, useUser } from "@clerk/expo";
-import React from "react";
-import { Text, View, TouchableOpacity, Image, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import images from '@/constants/images';
+import { useClerk, useUser } from '@clerk/expo';
+import { styled } from "nativewind";
+import { Image, Pressable, Text, View } from 'react-native';
+import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
+//import { usePostHog } from 'posthog-react-native';
+const SafeAreaView = styled(RNSafeAreaView);
 
-export default function Settings() {
-  const { signOut } = useAuth();
-  const { user } = useUser();
+const Settings = () => {
+    const { signOut } = useClerk();
+    const { user } = useUser();
+    //const posthog = usePostHog();
 
-  return (
-    <SafeAreaView className="flex-1 bg-background">
-      <ScrollView className="flex-1 px-5 pt-8">
-        <Text className="text-3xl font-sans-bold text-primary mb-8">Settings</Text>
+    const handleSignOut = async () => {
+        //posthog.capture('user_signed_out');
+        try {
+            await signOut();
+            // Only reset analytics after successful sign-out
+            //posthog.reset();
+        } catch (error) {
+            //console.error('Sign-out failed:', error);
+            // Don't reset analytics if sign-out failed
+        }
+    };
 
-        <View className="auth-card mb-8">
-          <View className="flex-row items-center gap-4">
-            <Image
-              source={{ uri: user?.imageUrl }}
-              className="size-16 rounded-full"
-            />
-            <View>
-              <Text className="text-xl font-sans-bold text-primary">
-                {user?.fullName || "User"}
-              </Text>
-              <Text className="text-sm font-sans-medium text-muted-foreground">
-                {user?.primaryEmailAddress?.emailAddress}
-              </Text>
+    const displayName = user?.firstName || user?.fullName || user?.emailAddresses[0]?.emailAddress || 'User';
+    const email = user?.emailAddresses[0]?.emailAddress;
+
+    return (
+        <SafeAreaView className="flex-1 bg-background p-5">
+            <Text className="text-3xl font-sans-bold text-primary mb-6">Settings</Text>
+
+            {/* User Profile Section */}
+            <View className="auth-card mb-5">
+                <View className="flex-row items-center gap-4 mb-4">
+                    <Image
+                        source={user?.imageUrl ? { uri: user.imageUrl } : images.avatar}
+                        className="size-16 rounded-full"
+                    />
+                    <View className="flex-1">
+                        <Text className="text-lg font-sans-bold text-primary">{displayName}</Text>
+                        {email && (
+                            <Text className="text-sm font-sans-medium text-muted-foreground">{email}</Text>
+                        )}
+                    </View>
+                </View>
             </View>
-          </View>
-        </View>
 
-        <View className="gap-4">
-          <Text className="text-xs font-sans-bold uppercase tracking-widest text-muted-foreground px-1">
-            Account
-          </Text>
+            {/* Account Section */}
+            <View className="auth-card mb-5">
+                <Text className="text-base font-sans-semibold text-primary mb-3">Account</Text>
+                <View className="gap-2">
+                    <View className="flex-row justify-between items-center py-2">
+                        <Text className="text-sm font-sans-medium text-muted-foreground">Account ID</Text>
+                        <Text className="text-sm font-sans-medium text-primary" numberOfLines={1} ellipsizeMode="tail">
+                            {user?.id?.substring(0, 20)}...
+                        </Text>
+                    </View>
+                    <View className="flex-row justify-between items-center py-2">
+                        <Text className="text-sm font-sans-medium text-muted-foreground">Joined</Text>
+                        <Text className="text-sm font-sans-medium text-primary">
+                            {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                        </Text>
+                    </View>
+                </View>
+            </View>
 
-          <TouchableOpacity className="auth-secondary-button border-destructive/20 bg-destructive/5" onPress={() => signOut()}>
-            <Text className="auth-secondary-button-text text-destructive">Sign Out</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+            {/* Sign Out Button */}
+            <Pressable
+                className="auth-button bg-destructive"
+                onPress={handleSignOut}
+            >
+                <Text className="auth-button-text text-white">Sign Out</Text>
+            </Pressable>
+        </SafeAreaView>
+    )
 }
+
+export default Settings
