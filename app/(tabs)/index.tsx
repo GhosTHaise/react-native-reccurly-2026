@@ -5,12 +5,13 @@ import { HOME_BALANCE, HOME_SUBSCRIPTIONS, UPCOMING_SUBSCRIPTIONS } from '@/cons
 import { icons } from '@/constants/icons';
 import images from '@/constants/images';
 import { formatCurrency } from '@/lib/utils';
+import { useUser } from '@clerk/expo';
 import dayjs from 'dayjs';
+import { router } from 'expo-router';
 import { styled } from 'nativewind';
 import { useState } from 'react';
-import { FlatList, Image, Text, View } from "react-native";
+import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from 'react-native-safe-area-context';
-import { useUser } from '@clerk/expo';
 
 export default function App() {
   const { user } = useUser();
@@ -23,10 +24,10 @@ export default function App() {
         ListHeaderComponent={() =>
           <>
             <View className="home-header">
-              <View className="home-user">
+              <TouchableOpacity onPress={() => router.push("/(tabs)/settings")} className="home-user">
                 <Image source={user?.imageUrl ? { uri: user.imageUrl } : images.avatar} className="home-avatar" />
                 <Text className="home-user-name">{user?.firstName || 'User'}</Text>
-              </View>
+              </TouchableOpacity>
 
               <Image source={icons.add} className="home-add-icon" />
             </View>
