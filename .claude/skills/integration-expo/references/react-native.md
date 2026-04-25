@@ -34,7 +34,7 @@ If you're using [React Native Web](https://github.com/necolas/react-native-web) 
 
 ### Configuration
 
-#### With the PosthogProvider
+#### With the PostHogProvider
 
 The recommended way to set up PostHog for React Native is to use the `PostHogProvider`. This utilizes the Context API to pass the PostHog client around, and enables [autocapture](/docs/product-analytics/autocapture.md).
 
