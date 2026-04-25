@@ -2,7 +2,7 @@
 
 ## Installation
 
-Our React Native enables you to integrate PostHog with your React Native project. For React Native projects built with Expo, there are no mobile native dependencies outside of supported Expo packages.
+Our React Native SDK enables you to integrate PostHog with your React Native project. For React Native projects built with Expo, there are no mobile native dependencies outside of supported Expo packages.
 
 To install, add the `posthog-react-native` package to your project as well as the required peer dependencies.
 
