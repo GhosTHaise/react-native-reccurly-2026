@@ -1,10 +1,11 @@
+import { posthogReplayConfig } from "@/constants/posthog-config";
 import "@/global.css";
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from "@clerk/expo/token-cache";
 import { useFonts } from "expo-font";
-import { SplashScreen, Stack, usePathname, useGlobalSearchParams } from "expo-router";
-import { useEffect, useRef } from "react";
+import { SplashScreen, Stack, useGlobalSearchParams, usePathname } from "expo-router";
 import { PostHogProvider } from 'posthog-react-native';
+import { useEffect, useRef } from "react";
 import { posthog } from '../src/config/posthog';
 //import { View, ActivityIndicator } from "react-native";
 
@@ -77,6 +78,9 @@ export default function RootLayout() {
           captureScreens: false,
           captureTouches: true,
           propsToCapture: ['testID'],
+        }}
+        options={{
+          sessionReplayConfig : posthogReplayConfig
         }}
       >
         {/* Loading state while Clerk initializes */}
