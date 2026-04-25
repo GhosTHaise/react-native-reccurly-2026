@@ -1,9 +1,12 @@
+import { posthogReplayConfig } from "@/constants/posthog-config";
 import "@/global.css";
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from "@clerk/expo/token-cache";
 import { useFonts } from "expo-font";
-import { SplashScreen, Stack } from "expo-router";
-import { useEffect } from "react";
+import { SplashScreen, Stack, useGlobalSearchParams, usePathname } from "expo-router";
+import { PostHogProvider } from 'posthog-react-native';
+import { useEffect, useRef } from "react";
+import { posthog } from '../src/config/posthog';
 //import { View, ActivityIndicator } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
@@ -16,11 +19,11 @@ if (!publishableKey) {
 
 function RootLayoutContent() {
   const { isLoaded: authLoaded } = useAuth();
-  /* const pathname = usePathname();
+  const pathname = usePathname();
   const params = useGlobalSearchParams();
-  const previousPathname = useRef<string | undefined>(undefined); */
+  const previousPathname = useRef<string | undefined>(undefined);
 
-  /* useEffect(() => {
+  useEffect(() => {
     if (previousPathname.current !== pathname) {
       // Filter route params to avoid leaking sensitive data
       const sanitizedParams = Object.keys(params).reduce((acc, key) => {
@@ -37,7 +40,7 @@ function RootLayoutContent() {
       });
       previousPathname.current = pathname;
     }
-  }, [pathname, params]); */
+  }, [pathname, params]);
 
   const [fontsLoaded] = useFonts({
     'sans-regular': require('../assets/fonts/PlusJakartaSans-Regular.ttf'),
@@ -69,9 +72,21 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      {/* Loading state while Clerk initializes */}
-      {/* <ClerkLoadingView /> */}
-      <RootLayoutContent />
+      <PostHogProvider
+        client={posthog}
+        autocapture={{
+          captureScreens: false,
+          captureTouches: true,
+          propsToCapture: ['testID'],
+        }}
+        options={{
+          sessionReplayConfig : posthogReplayConfig
+        }}
+      >
+        {/* Loading state while Clerk initializes */}
+        {/* <ClerkLoadingView /> */}
+        <RootLayoutContent />
+      </PostHogProvider>
     </ClerkProvider>
   )
 }

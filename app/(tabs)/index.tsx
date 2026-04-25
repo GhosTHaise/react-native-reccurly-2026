@@ -9,12 +9,14 @@ import { useUser } from '@clerk/expo';
 import dayjs from 'dayjs';
 import { router } from 'expo-router';
 import { styled } from 'nativewind';
+import { usePostHog } from 'posthog-react-native';
 import { useState } from 'react';
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from 'react-native-safe-area-context';
 
 export default function App() {
   const { user } = useUser();
+  const posthog = usePostHog();
   const SafeAreaView = styled(RNSafeAreaView);
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null)
 
@@ -61,7 +63,13 @@ export default function App() {
           </>
         }
         data={HOME_SUBSCRIPTIONS}
-        renderItem={({ item }) => <SubscriptionCard {...item} expanded={expandedSubscriptionId === item.id} onPress={() => setExpandedSubscriptionId((currentId) => currentId === item.id ? null : item.id)} />}
+        renderItem={({ item }) => <SubscriptionCard {...item} expanded={expandedSubscriptionId === item.id} onPress={() => {
+          const isExpanding = expandedSubscriptionId !== item.id;
+          setExpandedSubscriptionId((currentId) => currentId === item.id ? null : item.id);
+          if (isExpanding) {
+            posthog.capture('subscription_expanded', { subscription_name: item.name, category: item.category ?? "no-category" });
+          }
+        }} />}
         keyExtractor={(item) => item.id}
         showsHorizontalScrollIndicator={false}
         extraData={expandedSubscriptionId}

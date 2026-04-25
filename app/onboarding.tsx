@@ -1,9 +1,16 @@
 import { Link } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import { Text, View, TouchableOpacity, Image, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { usePostHog } from "posthog-react-native";
 
 export default function Onboarding() {
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    posthog.capture('onboarding_viewed');
+  }, [posthog]);
+
   return (
     <SafeAreaView className="auth-safe-area">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="auth-scroll">
