@@ -1,9 +1,11 @@
+import CreateSubscriptionModal from '@/components/create-subscription-modal';
 import ListHeading from '@/components/list-heading';
 import SubscriptionCard from '@/components/subscription-card';
 import UpcomingSubscriptionCard from '@/components/upcoming-subscription-card';
-import { HOME_BALANCE, HOME_SUBSCRIPTIONS, UPCOMING_SUBSCRIPTIONS } from '@/constants/data';
+import { HOME_BALANCE, UPCOMING_SUBSCRIPTIONS } from '@/constants/data';
 import { icons } from '@/constants/icons';
 import images from '@/constants/images';
+import { useSubscriptionStore } from '@/lib/subscription.store';
 import { formatCurrency } from '@/lib/utils';
 import { useUser } from '@clerk/expo';
 import dayjs from 'dayjs';
@@ -11,14 +13,16 @@ import { router } from 'expo-router';
 import { styled } from 'nativewind';
 import { usePostHog } from 'posthog-react-native';
 import { useState } from 'react';
-import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Image, Pressable, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from 'react-native-safe-area-context';
 
 export default function App() {
   const { user } = useUser();
   const posthog = usePostHog();
   const SafeAreaView = styled(RNSafeAreaView);
-  const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null)
+  const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { subscriptions: homeSubscriptions } = useSubscriptionStore();
 
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
@@ -31,7 +35,9 @@ export default function App() {
                 <Text className="home-user-name">{user?.firstName || 'User'}</Text>
               </TouchableOpacity>
 
-              <Image source={icons.add} className="home-add-icon" />
+              <Pressable onPress={() => setIsModalOpen(true)}>
+                <Image source={icons.add} className="home-add-icon" />
+              </Pressable>
             </View>
 
             <View className="home-balance-card">
@@ -62,7 +68,7 @@ export default function App() {
             />
           </>
         }
-        data={HOME_SUBSCRIPTIONS}
+        data={homeSubscriptions}
         renderItem={({ item }) => <SubscriptionCard {...item} expanded={expandedSubscriptionId === item.id} onPress={() => {
           const isExpanding = expandedSubscriptionId !== item.id;
           setExpandedSubscriptionId((currentId) => currentId === item.id ? null : item.id);
@@ -77,6 +83,11 @@ export default function App() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={<Text className="home-empty-state">No subscriptions yet.</Text>}
         contentContainerClassName='pb-30'
+      />
+      {/* Modal */}
+      <CreateSubscriptionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
     </SafeAreaView>
   );
