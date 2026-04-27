@@ -49,6 +49,10 @@ This project supports environment variables for configuration. Create a `.env` f
 ```bash
 # Clerk Authentication
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
+
+# PostHog Analytics (optional - analytics disabled if not set)
+POSTHOG_PROJECT_TOKEN=your-posthog-project-token
+POSTHOG_HOST=https://us.i.posthog.com
 ```
 
 ### How to Use Environment Variables
@@ -67,6 +71,46 @@ const clerkPublishableKey = Constants.expoConfig.extra.EXPO_PUBLIC_CLERK_PUBLISH
 - Variables without `EXPO_PUBLIC_` prefix are only available in development builds
 - Never commit sensitive information to version control - add `.env` to your `.gitignore` file
 - Use `Constants.expoConfig.extra` to access environment variables in your app
+
+## PostHog Analytics
+
+This project includes optional PostHog analytics integration for tracking user behavior.
+
+### Configuration
+
+PostHog is configured in `src/config/posthog.ts` and reads from the following environment variables:
+
+- `POSTHOG_PROJECT_TOKEN` - Your PostHog project token (starts with `phc_`)
+- `POSTHOG_HOST` - PostHog API host URL (defaults to `https://us.i.posthog.com`)
+
+### How It Works
+
+- When `POSTHOG_PROJECT_TOKEN` is set, analytics are enabled
+- When not configured, a warning is logged and analytics are disabled
+- Events are batched and flushed every 10 seconds for battery efficiency
+- App lifecycle events (install, open, background) are captured automatically
+- Screen tracking is handled via Expo Router in `_layout.tsx`
+
+### Event Tracking
+
+The app tracks the following events:
+
+- `user_logged_in` - When a user signs in (includes `username` and `is_new_user`)
+- `user_logged_out` - When a user signs out
+- `burrito_considered` - When user considers a burrito (includes `total_considerations`)
+
+### User Identification
+
+Users are automatically identified by username when they log in, with the following properties set:
+
+- `$set.username` - The username
+- `$set_once.first_login_date` - Timestamp of first login
+
+### Testing
+
+1. Set your `POSTHOG_PROJECT_TOKEN` in `.env`
+2. Run `npx expo start`
+3. Open PostHog dashboard and navigate to "Live Events" to see events in real-time
 
 ## Join the community
 
