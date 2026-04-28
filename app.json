@@ -44,7 +44,7 @@
       [
         "expo-font",
         {
-          "fonts" : [
+          "fonts": [
             "./assets/fonts/PlusJakartaSans-Regular.ttf",
             "./assets/fonts/PlusJakartaSans-Bold.ttf",
             "./assets/fonts/PlusJakartaSans-ExtraBold.ttf",
@@ -52,6 +52,18 @@
             "./assets/fonts/PlusJakartaSans-Medium.ttf",
             "./assets/fonts/PlusJakartaSans-SemiBold.ttf"
           ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "pickFirst": [
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+              ]
+            }
+          }
         }
       ]
     ],
