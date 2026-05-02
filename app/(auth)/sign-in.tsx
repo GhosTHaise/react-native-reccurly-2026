@@ -1,4 +1,5 @@
 import { useSignIn } from '@clerk/expo';
+import * as Haptics from 'expo-haptics';
 import { Link, useRouter, type Href } from 'expo-router';
 import { styled } from 'nativewind';
 import { usePostHog } from 'posthog-react-native';
@@ -17,6 +18,10 @@ const SignIn = () => {
     const [password, setPassword] = useState('');
     const [code, setCode] = useState('');
 
+    // General feedback states
+    const [generalError, setGeneralError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
     // Validation states
     const [emailTouched, setEmailTouched] = useState(false);
     const [passwordTouched, setPasswordTouched] = useState(false);
@@ -26,8 +31,37 @@ const SignIn = () => {
     const passwordValid = password.length > 0;
     const formValid = emailAddress.length > 0 && password.length > 0 && emailValid;
 
+    const onSignInSuccess = async (email: string, decorateUrl: (path: string) => string) => {
+        setSuccessMessage('Successfully signed in!');
+        setGeneralError(null);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        posthog.identify(email, {
+            $set: { email: email },
+            $set_once: { first_sign_in_date: new Date().toISOString() },
+        });
+        posthog.capture('user_signed_in', { email: email });
+
+        // Short delay to show success message
+        setTimeout(() => {
+            const url = decorateUrl('/(tabs)');
+            if (url.startsWith('http')) {
+                if (typeof window !== 'undefined' && window.location) {
+                    window.location.href = url;
+                } else {
+                    router.replace('/(tabs)' as Href);
+                }
+            } else {
+                router.replace(url as Href);
+            }
+        }, 1500);
+    };
+
     const handleSubmit = async () => {
         if (!formValid) return;
+
+        setGeneralError(null);
+        setSuccessMessage(null);
 
         const { error } = await signIn.password({
             emailAddress,
@@ -35,6 +69,8 @@ const SignIn = () => {
         });
 
         if (error) {
+            setGeneralError(error.message || 'Invalid email or password');
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             console.error(JSON.stringify(error, null, 2));
             posthog.capture('user_sign_in_failed', {
                 error_message: error.message,
@@ -49,32 +85,21 @@ const SignIn = () => {
                         console.log(session?.currentTask);
                         return;
                     }
-
-                    posthog.identify(emailAddress, {
-                        $set: { email: emailAddress },
-                        $set_once: { first_sign_in_date: new Date().toISOString() },
-                    });
-                    posthog.capture('user_signed_in', { email: emailAddress });
-
-                    const url = decorateUrl('/(tabs)');
-                    if (url.startsWith('http')) {
-                        // Only use window.location on web platform
-                        if (typeof window !== 'undefined' && window.location) {
-                            window.location.href = url;
-                        } else {
-                            // On native, just use router navigation
-                            router.replace('/(tabs)' as Href);
-                        }
-                    } else {
-                        router.replace(url as Href);
-                    }
+                    onSignInSuccess(emailAddress, decorateUrl);
                 },
             });
         } else if (signIn.status === 'needs_second_factor') {
-            // Handle MFA if needed (not implemented in this basic flow)
-            console.log('MFA required');
+            // Handle MFA
+            setSuccessMessage('MFA Required. Sending code...');
+            const { error: mfaError } = await signIn.mfa.sendEmailCode();
+            if (mfaError) {
+                setGeneralError(mfaError.message);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            } else {
+                setSuccessMessage('Verification code sent to your email');
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            }
         } else if (signIn.status === 'needs_client_trust') {
-            // Send email code for client trust verification
             const emailCodeFactor = signIn.supportedSecondFactors.find(
                 (factor) => factor.strategy === 'email_code'
             );
@@ -82,13 +107,18 @@ const SignIn = () => {
             if (emailCodeFactor) {
                 await signIn.mfa.sendEmailCode();
             }
-        } else {
-            console.error('Sign-in attempt not complete:', signIn);
         }
     };
 
     const handleVerify = async () => {
-        await signIn.mfa.verifyEmailCode({ code });
+        setGeneralError(null);
+        const { error } = await signIn.mfa.verifyEmailCode({ code });
+
+        if (error) {
+            setGeneralError(error.message || 'Invalid verification code');
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            return;
+        }
 
         if (signIn.status === 'complete') {
             await signIn.finalize({
@@ -97,34 +127,17 @@ const SignIn = () => {
                         console.log(session?.currentTask);
                         return;
                     }
-
-                    posthog.identify(emailAddress, {
-                        $set: { email: emailAddress },
-                        $set_once: { first_sign_in_date: new Date().toISOString() },
-                    });
-                    posthog.capture('user_signed_in', { email: emailAddress });
-
-                    const url = decorateUrl('/(tabs)');
-                    if (url.startsWith('http')) {
-                        // Only use window.location on web platform
-                        if (typeof window !== 'undefined' && window.location) {
-                            window.location.href = url;
-                        } else {
-                            // On native, just use router navigation
-                            router.replace('/(tabs)' as Href);
-                        }
-                    } else {
-                        router.replace(url as Href);
-                    }
+                    onSignInSuccess(emailAddress, decorateUrl);
                 },
             });
         } else {
+            setGeneralError('Sign-in attempt not complete');
             console.error('Sign-in attempt not complete:', signIn);
         }
     };
 
-    // Show verification screen if client trust is needed
-    if (signIn.status === 'needs_client_trust') {
+    // Show verification screen if client trust or MFA is needed
+    if (signIn.status === 'needs_client_trust' || signIn.status === 'needs_second_factor') {
         return (
             <SafeAreaView className="auth-safe-area">
                 <KeyboardAvoidingView
@@ -150,13 +163,26 @@ const SignIn = () => {
                                 </View>
                                 <Text className="auth-title">Verify your identity</Text>
                                 <Text className="auth-subtitle">
-                                    We sent a verification code to your email
+                                    {signIn.status === 'needs_second_factor' 
+                                        ? 'Multi-factor authentication is required' 
+                                        : 'We sent a verification code to your email'}
                                 </Text>
                             </View>
 
                             {/* Verification Form */}
                             <View className="auth-card">
                                 <View className="auth-form">
+                                    {generalError && (
+                                        <View className="auth-message-box auth-message-error">
+                                            <Text className="auth-message-text">{generalError}</Text>
+                                        </View>
+                                    )}
+                                    {successMessage && (
+                                        <View className="auth-message-box auth-message-success">
+                                            <Text className="auth-message-text">{successMessage}</Text>
+                                        </View>
+                                    )}
+
                                     <View className="auth-field">
                                         <Text className="auth-label">Verification Code</Text>
                                         <TextInput
@@ -164,7 +190,10 @@ const SignIn = () => {
                                             value={code}
                                             placeholder="Enter 6-digit code"
                                             placeholderTextColor="rgba(0, 0, 0, 0.4)"
-                                            onChangeText={setCode}
+                                            onChangeText={(text) => {
+                                                setCode(text);
+                                                if (generalError) setGeneralError(null);
+                                            }}
                                             keyboardType="number-pad"
                                             autoComplete="one-time-code"
                                             maxLength={6}
@@ -186,7 +215,11 @@ const SignIn = () => {
 
                                     <Pressable
                                         className="auth-secondary-button"
-                                        onPress={() => signIn.mfa.sendEmailCode()}
+                                        onPress={async () => {
+                                            const { error } = await signIn.mfa.sendEmailCode();
+                                            if (!error) setSuccessMessage('Code resent');
+                                            else setGeneralError(error.message);
+                                        }}
                                         disabled={fetchStatus === 'fetching'}
                                     >
                                         <Text className="auth-secondary-button-text">Resend Code</Text>
@@ -194,7 +227,11 @@ const SignIn = () => {
 
                                     <Pressable
                                         className="auth-secondary-button"
-                                        onPress={() => signIn.reset()}
+                                        onPress={() => {
+                                            setGeneralError(null);
+                                            setSuccessMessage(null);
+                                            signIn.reset();
+                                        }}
                                         disabled={fetchStatus === 'fetching'}
                                     >
                                         <Text className="auth-secondary-button-text">Start Over</Text>
@@ -241,6 +278,17 @@ const SignIn = () => {
                         {/* Sign-In Form */}
                         <View className="auth-card">
                             <View className="auth-form">
+                                {generalError && (
+                                    <View className="auth-message-box auth-message-error">
+                                        <Text className="auth-message-text">{generalError}</Text>
+                                    </View>
+                                )}
+                                {successMessage && (
+                                    <View className="auth-message-box auth-message-success">
+                                        <Text className="auth-message-text">{successMessage}</Text>
+                                    </View>
+                                )}
+
                                 <View className="auth-field">
                                     <Text className="auth-label">Email Address</Text>
                                     <TextInput
@@ -249,7 +297,10 @@ const SignIn = () => {
                                         value={emailAddress}
                                         placeholder="name@example.com"
                                         placeholderTextColor="rgba(0, 0, 0, 0.4)"
-                                        onChangeText={setEmailAddress}
+                                        onChangeText={(text) => {
+                                            setEmailAddress(text);
+                                            if (generalError) setGeneralError(null);
+                                        }}
                                         onBlur={() => setEmailTouched(true)}
                                         keyboardType="email-address"
                                         autoComplete="email"
@@ -270,7 +321,10 @@ const SignIn = () => {
                                         placeholder="Enter your password"
                                         placeholderTextColor="rgba(0, 0, 0, 0.4)"
                                         secureTextEntry
-                                        onChangeText={setPassword}
+                                        onChangeText={(text) => {
+                                            setPassword(text);
+                                            if (generalError) setGeneralError(null);
+                                        }}
                                         onBlur={() => setPasswordTouched(true)}
                                         autoComplete="password"
                                     />
