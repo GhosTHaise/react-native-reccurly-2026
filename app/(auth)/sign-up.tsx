@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { SafeAreaView as RNSafeAreaView } from 'react-native-safe-area-context';
 import { styled } from 'nativewind';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 
 const SafeAreaView = styled(RNSafeAreaView);
 
@@ -18,6 +19,10 @@ const SignUp = () => {
     const [password, setPassword] = useState('');
     const [code, setCode] = useState('');
 
+    // General feedback states
+    const [generalError, setGeneralError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
     // Validation states
     const [emailTouched, setEmailTouched] = useState(false);
     const [passwordTouched, setPasswordTouched] = useState(false);
@@ -27,8 +32,37 @@ const SignUp = () => {
     const passwordValid = password.length === 0 || password.length >= 8;
     const formValid = emailAddress.length > 0 && password.length >= 8 && emailValid;
 
+    const onSignUpSuccess = async (email: string, decorateUrl: (path: string) => string) => {
+        setSuccessMessage('Successfully created account!');
+        setGeneralError(null);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        posthog.identify(email, {
+            $set: { email: email },
+            $set_once: { sign_up_date: new Date().toISOString() },
+        });
+        posthog.capture('user_signed_up', { email: email });
+
+        // Short delay to show success message
+        setTimeout(() => {
+            const url = decorateUrl('/(tabs)');
+            if (url.startsWith('http')) {
+                if (typeof window !== 'undefined' && window.location) {
+                    window.location.href = url;
+                } else {
+                    router.replace('/(tabs)' as Href);
+                }
+            } else {
+                router.replace(url as Href);
+            }
+        }, 1500);
+    };
+
     const handleSubmit = async () => {
         if (!formValid) return;
+
+        setGeneralError(null);
+        setSuccessMessage(null);
 
         const { error } = await signUp.password({
             emailAddress,
@@ -36,6 +70,8 @@ const SignUp = () => {
         });
 
         if (error) {
+            setGeneralError(error.message || 'Failed to create account');
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             console.error(JSON.stringify(error, null, 2));
             posthog.capture('user_sign_up_failed', {
                 error_message: error.message,
@@ -44,15 +80,27 @@ const SignUp = () => {
         }
 
         // Send verification email
-        if (!error) {
-            await signUp.verifications.sendEmailCode();
+        const { error: verifyError } = await signUp.verifications.sendEmailCode();
+        if (verifyError) {
+            setGeneralError(verifyError.message);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        } else {
+            setSuccessMessage('Verification code sent to ' + emailAddress);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         }
     };
 
     const handleVerify = async () => {
-        await signUp.verifications.verifyEmailCode({
+        setGeneralError(null);
+        const { error } = await signUp.verifications.verifyEmailCode({
             code,
         });
+
+        if (error) {
+            setGeneralError(error.message || 'Invalid verification code');
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            return;
+        }
 
         if (signUp.status === 'complete') {
             await signUp.finalize({
@@ -61,28 +109,11 @@ const SignUp = () => {
                         console.log(session?.currentTask);
                         return;
                     }
-
-                    posthog.identify(emailAddress, {
-                        $set: { email: emailAddress },
-                        $set_once: { sign_up_date: new Date().toISOString() },
-                    });
-                    posthog.capture('user_signed_up', { email: emailAddress });
-
-                    const url = decorateUrl('/(tabs)');
-                    if (url.startsWith('http')) {
-                        // Only use window.location on web platform
-                        if (typeof window !== 'undefined' && window.location) {
-                            window.location.href = url;
-                        } else {
-                            // On native, just use router navigation
-                            router.replace('/(tabs)' as Href);
-                        }
-                    } else {
-                        router.replace(url as Href);
-                    }
+                    onSignUpSuccess(emailAddress, decorateUrl);
                 },
             });
         } else {
+            setGeneralError('Sign-up attempt not complete');
             console.error('Sign-up attempt not complete:', signUp);
         }
     };
@@ -130,6 +161,17 @@ const SignUp = () => {
                             {/* Verification Form */}
                             <View className="auth-card">
                                 <View className="auth-form">
+                                    {generalError && (
+                                        <View className="auth-message-box auth-message-error">
+                                            <Text className="auth-message-error-text">{generalError}</Text>
+                                        </View>
+                                    )}
+                                    {successMessage && (
+                                        <View className="auth-message-box auth-message-success">
+                                            <Text className="auth-message-success-text">{successMessage}</Text>
+                                        </View>
+                                    )}
+
                                     <View className="auth-field">
                                         <Text className="auth-label">Verification Code</Text>
                                         <TextInput
@@ -137,7 +179,10 @@ const SignUp = () => {
                                             value={code}
                                             placeholder="Enter 6-digit code"
                                             placeholderTextColor="rgba(0, 0, 0, 0.4)"
-                                            onChangeText={setCode}
+                                            onChangeText={(text) => {
+                                                setCode(text);
+                                                if (generalError) setGeneralError(null);
+                                            }}
                                             keyboardType="number-pad"
                                             autoComplete="one-time-code"
                                             maxLength={6}
@@ -159,7 +204,11 @@ const SignUp = () => {
 
                                     <Pressable
                                         className="auth-secondary-button"
-                                        onPress={() => signUp.verifications.sendEmailCode()}
+                                        onPress={async () => {
+                                            const { error } = await signUp.verifications.sendEmailCode();
+                                            if (!error) setSuccessMessage('Code resent');
+                                            else setGeneralError(error.message);
+                                        }}
                                         disabled={fetchStatus === 'fetching'}
                                     >
                                         <Text className="auth-secondary-button-text">Resend Code</Text>
@@ -206,6 +255,17 @@ const SignUp = () => {
                         {/* Sign-Up Form */}
                         <View className="auth-card">
                             <View className="auth-form">
+                                {generalError && (
+                                    <View className="auth-message-box auth-message-error">
+                                        <Text className="auth-message-error-text">{generalError}</Text>
+                                    </View>
+                                )}
+                                {successMessage && (
+                                    <View className="auth-message-box auth-message-success">
+                                        <Text className="auth-message-success-text">{successMessage}</Text>
+                                    </View>
+                                )}
+
                                 <View className="auth-field">
                                     <Text className="auth-label">Email Address</Text>
                                     <TextInput
@@ -214,7 +274,10 @@ const SignUp = () => {
                                         value={emailAddress}
                                         placeholder="name@example.com"
                                         placeholderTextColor="rgba(0, 0, 0, 0.4)"
-                                        onChangeText={setEmailAddress}
+                                        onChangeText={(text) => {
+                                            setEmailAddress(text);
+                                            if (generalError) setGeneralError(null);
+                                        }}
                                         onBlur={() => setEmailTouched(true)}
                                         keyboardType="email-address"
                                         autoComplete="email"
@@ -235,7 +298,10 @@ const SignUp = () => {
                                         placeholder="Create a strong password"
                                         placeholderTextColor="rgba(0, 0, 0, 0.4)"
                                         secureTextEntry
-                                        onChangeText={setPassword}
+                                        onChangeText={(text) => {
+                                            setPassword(text);
+                                            if (generalError) setGeneralError(null);
+                                        }}
                                         onBlur={() => setPasswordTouched(true)}
                                         autoComplete="password-new"
                                     />

@@ -1,11 +1,11 @@
 import { useSignIn } from '@clerk/expo';
-import * as Haptics from 'expo-haptics';
 import { Link, useRouter, type Href } from 'expo-router';
 import { styled } from 'nativewind';
 import { usePostHog } from 'posthog-react-native';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView as RNSafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 
 const SafeAreaView = styled(RNSafeAreaView);
 
@@ -174,12 +174,12 @@ const SignIn = () => {
                                 <View className="auth-form">
                                     {generalError && (
                                         <View className="auth-message-box auth-message-error">
-                                            <Text className="auth-message-text">{generalError}</Text>
+                                            <Text className="auth-message-error-text">{generalError}</Text>
                                         </View>
                                     )}
                                     {successMessage && (
                                         <View className="auth-message-box auth-message-success">
-                                            <Text className="auth-message-text">{successMessage}</Text>
+                                            <Text className="auth-message-success-text">{successMessage}</Text>
                                         </View>
                                     )}
 
@@ -280,12 +280,12 @@ const SignIn = () => {
                             <View className="auth-form">
                                 {generalError && (
                                     <View className="auth-message-box auth-message-error">
-                                        <Text className="auth-message-text">{generalError}</Text>
+                                        <Text className="auth-message-error-text">{generalError}</Text>
                                     </View>
                                 )}
                                 {successMessage && (
                                     <View className="auth-message-box auth-message-success">
-                                        <Text className="auth-message-text">{successMessage}</Text>
+                                        <Text className="auth-message-success-text">{successMessage}</Text>
                                     </View>
                                 )}
 
