@@ -112,6 +112,63 @@ Users are automatically identified by username when they log in, with the follow
 2. Run `npx expo start`
 3. Open PostHog dashboard and navigate to "Live Events" to see events in real-time
 
+
+## Building the App
+
+This project uses [Expo Application Services (EAS)](https://expo.dev/eas) to compile and build the applications for Android and iOS.
+
+### Prerequisites
+
+Before creating your first build, you need to install the EAS CLI and log in to your Expo account:
+
+1. Install the EAS CLI globally:
+   ```bash
+   npm install -g eas-cli
+   ```
+2. Log in to your Expo account:
+   ```bash
+   eas login
+   ```
+3. Initialize your project for EAS (this will generate an `eas.json` file if it doesn't exist):
+   ```bash
+   eas build:configure
+   ```
+
+### Creating Cloud Builds
+
+You can trigger cloud builds for different platforms and profiles (e.g., development, preview, or production).
+
+**For Android:**
+To create an APK for testing or an AAB for the Play Store:
+```bash
+# For a preview build (APK)
+eas build -p android --profile preview
+
+# For a production build (AAB)
+eas build -p android --profile production
+```
+
+**For iOS:**
+To create a build for simulators or TestFlight/App Store:
+```bash
+# For a simulator build
+eas build -p ios --profile preview
+
+# For a production build (requires Apple Developer account)
+eas build -p ios --profile production
+```
+
+### Local Builds
+
+If you prefer to compile the app directly on your machine rather than using Expo's cloud servers, you can append the `--local` flag to your build commands. 
+
+*Note: You will need Android Studio/SDK installed locally for Android, and Xcode (macOS only) installed for iOS.*
+```bash
+eas build -p android --profile preview --local
+```
+
+For more detailed information, check out the [EAS Build documentation](https://docs.expo.dev/build/introduction/).
+
 ## Join the community
 
 Join our community of developers creating universal apps.
