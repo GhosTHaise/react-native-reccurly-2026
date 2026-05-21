@@ -1,4 +1,5 @@
 # Welcome to your React Native Reccurly app 👋
+<img width="1864" height="694" alt="image" src="https://github.com/user-attachments/assets/9e30cb79-5373-4d23-a75e-fd8f30d657c1" />
 
 This is a simple [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app) .
 
